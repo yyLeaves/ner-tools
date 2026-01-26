@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entity Annotation Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #181818;
+            --bg-secondary: #242424;
+            --bg-card: #2a2a2a;
+            --text-primary: #F7F7F7;
+            --text-secondary: #b0b0b0;
+            --accent-primary: #FF5722;
+            --accent-secondary: #673AB7;
+            --accent-hover: #FFEB3B;
+            --border-color: #3a3a3a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            border-bottom: 3px solid var(--accent-primary);
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .citation {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .citation a {
+            transition: all 0.3s ease;
+        }
+
+        .citation a:hover {
+            color: var(--accent-hover);
+        }
+
+        .control-panel {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        button {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .visualization-container {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-left: 4px solid var(--accent-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 1.5rem;
+            background: var(--accent-secondary);
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+        }
+
+        .metadata-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metadata-label {
+            font-size: 0.8rem;
+            color: var(--accent-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+        }
+
+        .metadata-value {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .text-display {
+            padding: 2rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            line-height: 2;
+            font-size: 1.1rem;
+            border: 2px solid var(--border-color);
+        }
+
+        .entity-highlight {
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            font-weight: 600;
+            border-bottom: 3px solid currentColor;
+        }
+
+        .entity-highlight:hover {
+            filter: brightness(1.3);
+            transform: translateY(-1px);
+        }
+
+        .entity-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: var(--bg-primary);
+            border: 2px solid var(--accent-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 100;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+
+        .entity-highlight:hover .entity-tooltip {
+            opacity: 1;
+        }
+
+        .legend-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border: 2px solid var(--border-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--bg-card);
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .legend-item:hover {
+            border-color: var(--accent-hover);
+            background: var(--bg-primary);
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .legend-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .legend-count {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+
+        .relation-card {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-left: 4px solid var(--accent-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .relation-card:hover {
+            border-left-color: var(--accent-hover);
+            transform: translateX(8px);
+        }
+
+        .relation-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .relation-entity {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .relation-arrow {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+        }
+
+        .error-message {
+            background: var(--accent-primary);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #d84315;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: 'Playfair Display', serif;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.5rem;
+        }
+
+        .example-button {
+            background: var(--bg-secondary);
+            color: var(--accent-secondary);
+            border: 2px solid var(--accent-secondary);
+            padding: 0.75rem 1.5rem;
+            margin-right: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .example-button:hover {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        .article-selector {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .article-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .article-tab {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .article-tab:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .article-tab.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .definitions-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .definitions-modal.show {
+            display: flex;
+        }
+
+        .definitions-content {
+            background: var(--bg-card);
+            border: 3px solid var(--accent-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .definitions-content h2 {
+            font-family: 'Playfair Display', serif;
+            color: var(--accent-primary);
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+
+        .definition-item {
+            background: var(--bg-secondary);
+            padding: 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--accent-primary);
+            border: 2px solid var(--border-color);
+            border-left-width: 4px;
+        }
+
+        .definition-item.highlight {
+            background: var(--bg-primary);
+            border-color: var(--accent-hover);
+        }
+
+        .definition-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .definition-uri {
+            font-size: 0.8rem;
+            color: var(--accent-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .definition-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-top: 0.5rem;
+        }
+
+        .close-btn {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .close-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .view-definitions-btn {
+            background: var(--bg-secondary);
+            color: var(--accent-secondary);
+            border: 2px solid var(--accent-secondary);
+            padding: 0.75rem 1.5rem;
+            margin-left: 1rem;
+        }
+
+        .view-definitions-btn:hover {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        .file-upload-btn {
+            background: var(--bg-secondary);
+            color: var(--accent-primary);
+            border: 2px solid var(--accent-primary);
+            margin-bottom: 1rem;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .file-upload-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        #fileName {
+            color: var(--text-secondary);
+            margin-left: 1rem;
+            display: block;
+            margin-top: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .app-container {
+                padding: 1rem;
+            }
+
+            .control-panel {
+                padding: 1.5rem;
+            }
+
+            .text-display {
+                font-size: 1rem;
+                padding: 1.5rem;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Entity Annotation Visualizer</h1>
+            <p class="subtitle">Visualize and explore biomedical entity relationships</p>
+            <div class="citation">
+                <span style="color: var(--text-secondary); font-size: 0.9rem;">Data Source: </span>
+                <a href="https://hereditary.dei.unipd.it/challenges/gutbrainie/2025/#eight" target="_blank" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">GutBrainIE 2025 Challenge</a>
+            </div>
+        </header>
+
+        <div class="control-panel">
+            <div class="input-group">
+                <label for="fileInput">Load JSON File</label>
+                <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFileUpload(event)">
+                <button class="file-upload-btn" onclick="document.getElementById('fileInput').click()">
+                    📁 Choose JSON File
+                </button>
+                <button class="view-definitions-btn" onclick="showDefinitions()">
+                    📖 View Entity Definitions
+                </button>
+                <span id="fileName"></span>
+            </div>
+            <div class="input-group">
+                <label for="dataInput">Or Paste JSON Data</label>
+                <textarea id="dataInput" placeholder='Paste your annotation data here (JSON format)...'></textarea>
+            </div>
+            <button onclick="visualizeData()" id="visualizeBtn">Visualize Annotations</button>
+            <button class="example-button" onclick="loadExample()">Load Example Data</button>
+        </div>
+
+        <div id="articleSelector"></div>
+        <div id="output"></div>
+    </div>
+
+    <!-- Definitions Modal -->
+    <div id="definitionsModal" class="definitions-modal" onclick="hideDefinitions(event)">
+        <div class="definitions-content" onclick="event.stopPropagation()">
+            <h2>Entity Type Definitions</h2>
+            <div id="definitionsContainer"></div>
+            <button class="close-btn" onclick="hideDefinitions()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const labelColors = {
+            'Anatomical Location': '#FF5722',
+            'Animal': '#9E9E9E',
+            'Biomedical Technique': '#00BCD4',
+            'Bacteria': '#8BC34A',
+            'Chemical': '#9C27B0',
+            'Dietary Supplement': '#FF9800',
+            'DDF': '#F44336',
+            'Disease, Disorder, or Finding (DDF)': '#F44336',
+            'Drug': '#E91E63',
+            'Food': '#FFC107',
+            'Gene': '#009688',
+            'Human': '#2196F3',
+            'Microbiome': '#4CAF50',
+            'Statistical Technique': '#673AB7',
+            // Lowercase versions for compatibility
+            'anatomical location': '#FF5722',
+            'animal': '#9E9E9E',
+            'biomedical technique': '#00BCD4',
+            'bacteria': '#8BC34A',
+            'chemical': '#9C27B0',
+            'dietary supplement': '#FF9800',
+            'ddf': '#F44336',
+            'drug': '#E91E63',
+            'food': '#FFC107',
+            'gene': '#009688',
+            'human': '#2196F3',
+            'microbiome': '#4CAF50',
+            'statistical technique': '#673AB7'
+        };
+
+        const entityDefinitions = {
+            'Anatomical Location': {
+                uri: 'NCIT_C13717',
+                definition: 'Named locations of or within the body.'
+            },
+            'Animal': {
+                uri: 'NCIT_C14182',
+                definition: 'A non-human living organism that has membranous cell walls, requires oxygen and organic foods, and is capable of voluntary movement, as distinguished from a plant or mineral.'
+            },
+            'Biomedical Technique': {
+                uri: 'NCIT_C15188',
+                definition: 'Research concerned with the application of biological and physiological principles to clinical medicine.'
+            },
+            'Bacteria': {
+                uri: 'NCBITaxon_2',
+                definition: 'One of the three domains of life (the others being Eukarya and ARCHAEA), also called Eubacteria. They are unicellular prokaryotic microorganisms which generally possess rigid cell walls, multiply by cell division, and exhibit three principal forms: round or coccal, rodlike or bacillary, and spiral or spirochetal.'
+            },
+            'Chemical': {
+                uri: 'CHEBI_59999',
+                definition: 'A chemical substance is a portion of matter of constant composition, composed of molecular entities of the same type or of different types. This category also includes metabolites, which in biochemistry are the intermediate or end product of metabolism, and neurotransmitters, which are endogenous compounds used to transmit information across the synapses.'
+            },
+            'Dietary Supplement': {
+                uri: 'MESH_68019587',
+                definition: 'Products in capsule, tablet or liquid form that provide dietary ingredients, and that are intended to be taken by mouth to increase the intake of nutrients. Dietary supplements can include macronutrients, such as proteins, carbohydrates, and fats; and/or micronutrients, such as vitamins; minerals; and phytochemicals.'
+            },
+            'DDF': {
+                uri: 'NCIT_C7057',
+                definition: 'Disease, Disorder, or Finding: A condition that is relevant to human neoplasms and non-neoplastic disorders. This includes observations, test results, history and other concepts relevant to the characterization of human pathologic conditions.'
+            },
+            'Drug': {
+                uri: 'CHEBI_23888',
+                definition: 'Any substance which when absorbed into a living organism may modify one or more of its functions. The term is generally accepted for a substance taken for a therapeutic purpose, but is also commonly used for abused substances.'
+            },
+            'Food': {
+                uri: 'NCIT_C1949',
+                definition: 'A substance consumed by humans and animals for nutritional purposes.'
+            },
+            'Gene': {
+                uri: 'SNOMEDCT_67261001',
+                definition: 'A functional unit of heredity which occupies a specific position on a particular chromosome and serves as the template for a product that contributes to a phenotype or a biological function.'
+            },
+            'Human': {
+                uri: 'NCBITaxon_9606',
+                definition: 'Members of the species Homo sapiens.'
+            },
+            'Microbiome': {
+                uri: 'OHMI_0000003',
+                definition: 'This term refers to the entire habitat, including the microorganisms (bacteria, archaea, lower and higher eukaryotes, and viruses), their genomes (i.e., genes), and the surrounding environmental conditions.'
+            },
+            'Statistical Technique': {
+                uri: 'NCIT_C19044',
+                definition: 'A method of calculating, analyzing, or representing statistical data.'
+            }
+        };
+
+        let currentData = null;
+        let currentArticleId = null;
+
+        function getColorForLabel(label) {
+            return labelColors[label] || '#9E9E9E';
+        }
+
+        function showDefinitions() {
+            const modal = document.getElementById('definitionsModal');
+            const container = document.getElementById('definitionsContainer');
+            
+            container.innerHTML = Object.entries(entityDefinitions).map(([type, info]) => `
+                <div class="definition-item" style="border-left-color: ${getColorForLabel(type)}" data-type="${type}">
+                    <div class="definition-title">
+                        <div class="legend-color" style="background-color: ${getColorForLabel(type)}; width: 20px; height: 20px;"></div>
+                        <span>${type}</span>
+                    </div>
+                    <div class="definition-uri">${info.uri}</div>
+                    <div class="definition-text">${info.definition}</div>
+                </div>
+            `).join('');
+            
+            modal.classList.add('show');
+        }
+
+        function hideDefinitions(event) {
+            if (!event || event.target === document.getElementById('definitionsModal')) {
+                document.getElementById('definitionsModal').classList.remove('show');
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').textContent = `📄 ${file.name}`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    document.getElementById('dataInput').value = JSON.stringify(data, null, 2);
+                    currentData = data;
+                    
+                    // Check if multiple articles
+                    const articleIds = Object.keys(data);
+                    if (articleIds.length > 1) {
+                        showArticleSelector(data);
+                    } else {
+                        visualizeData();
+                    }
+                } catch (err) {
+                    document.getElementById('output').innerHTML = `<div class="error-message">Error reading file: ${err.message}</div>`;
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showArticleSelector(data) {
+            const articleIds = Object.keys(data);
+            const selector = document.getElementById('articleSelector');
+            
+            selector.innerHTML = `
+                <div class="article-selector">
+                    <h3 style="color: var(--accent-primary); margin-bottom: 1rem; font-family: 'Playfair Display', serif;">Select Article (${articleIds.length} total)</h3>
+                    <div class="article-tabs">
+                        ${articleIds.map((id, index) => `
+                            <div class="article-tab ${index === 0 ? 'active' : ''}" onclick="selectArticle('${id}')">
+                                Article ${id}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            selector.style.display = 'block';
+            
+            // Automatically show first article
+            currentArticleId = articleIds[0];
+            renderVisualization(data[articleIds[0]]);
+        }
+
+        function selectArticle(articleId) {
+            currentArticleId = articleId;
+            
+            // Update active tab
+            document.querySelectorAll('.article-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.includes(articleId)) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            renderVisualization(currentData[articleId]);
+        }
+
+        function loadExample() {
+            const exampleData = {
+                "36532064": {
+                    "metadata": {
+                        "title": "Hypothesis of a potential BrainBiota and its relation to CNS autoimmune inflammation.",
+                        "author": "Maria L Elkjaer; Lukas Simon; Tobias Frisch; Lisa-Marie Bente; Tim Kacprowski; Mads Thomassen; Richard Reynolds; Jan Baumbach; Richard Röttger; Zsolt Illes",
+                        "journal": "Frontiers in immunology",
+                        "year": "2022",
+                        "abstract": "Infectious agents have been long considered to play a role in the pathogenesis of neurological diseases as part of the interaction between genetic susceptibility and the environment. The role of bacteria in CNS autoimmunity has also been highlighted by changes in the diversity of gut microbiota in patients with neurological diseases such as Parkinson's disease, Alzheimer disease and multiple sclerosis, emphasizing the role of the gut-brain axis. We discuss the hypothesis of a brain microbiota, the BrainBiota: bacteria living in symbiosis with brain cells. Existence of various bacteria in the human brain is suggested by morphological evidence, presence of bacterial proteins, metabolites, transcripts and mucosal-associated invariant T cells. Based on our data, we discuss the hypothesis that these bacteria are an integral part of brain development and immune tolerance as well as directly linked to the gut microbiome. We further suggest that changes of the BrainBiota during brain diseases may be the consequence or cause of the chronic inflammation similarly to the gut microbiota."
+                    },
+                    "entities": [
+                        {"start_idx": 26, "end_idx": 35, "location": "title", "text_span": "BrainBiota", "label": "Microbiome"},
+                        {"start_idx": 57, "end_idx": 83, "location": "title", "text_span": "CNS autoimmune inflammation", "label": "DDF"},
+                        {"start_idx": 82, "end_idx": 102, "location": "abstract", "text_span": "neurological diseases", "label": "DDF"},
+                        {"start_idx": 207, "end_idx": 222, "location": "abstract", "text_span": "CNS autoimmunity", "label": "DDF"},
+                        {"start_idx": 281, "end_idx": 294, "location": "abstract", "text_span": "gut microbiota", "label": "Microbiome"},
+                        {"start_idx": 299, "end_idx": 306, "location": "abstract", "text_span": "patients", "label": "Human"},
+                        {"start_idx": 313, "end_idx": 333, "location": "abstract", "text_span": "neurological diseases", "label": "DDF"},
+                        {"start_idx": 343, "end_idx": 361, "location": "abstract", "text_span": "Parkinson's disease", "label": "DDF"},
+                        {"start_idx": 364, "end_idx": 380, "location": "abstract", "text_span": "Alzheimer disease", "label": "DDF"},
+                        {"start_idx": 386, "end_idx": 403, "location": "abstract", "text_span": "multiple sclerosis", "label": "DDF"},
+                        {"start_idx": 481, "end_idx": 496, "location": "abstract", "text_span": "brain microbiota", "label": "Microbiome"},
+                        {"start_idx": 503, "end_idx": 512, "location": "abstract", "text_span": "BrainBiota", "label": "Microbiome"},
+                        {"start_idx": 599, "end_idx": 609, "location": "abstract", "text_span": "human brain", "label": "Anatomical Location"},
+                        {"start_idx": 663, "end_idx": 680, "location": "abstract", "text_span": "bacterial proteins", "label": "Chemical"}
+                    ],
+                    "relations": [
+                        {
+                            "subject_text_span": "BrainBiota",
+                            "subject_label": "Microbiome",
+                            "predicate": "is linked to",
+                            "object_text_span": "CNS autoimmune inflammation",
+                            "object_label": "DDF"
+                        },
+                        {
+                            "subject_text_span": "gut microbiota",
+                            "subject_label": "Microbiome",
+                            "predicate": "is linked to",
+                            "object_text_span": "CNS autoimmunity",
+                            "object_label": "DDF"
+                        }
+                    ]
+                }
+            };
+            document.getElementById('dataInput').value = JSON.stringify(exampleData, null, 2);
+            currentData = exampleData;
+            document.getElementById('articleSelector').style.display = 'none';
+        }
+
+        function visualizeData() {
+            const input = document.getElementById('dataInput').value;
+            const output = document.getElementById('output');
+            
+            if (!input.trim()) {
+                output.innerHTML = '<div class="error-message">⚠️ Please paste some JSON data first.</div>';
+                return;
+            }
+
+            try {
+                const data = JSON.parse(input);
+                currentData = data;
+                const articleIds = Object.keys(data);
+                
+                if (articleIds.length > 1) {
+                    showArticleSelector(data);
+                } else {
+                    const articleId = articleIds[0];
+                    const article = data[articleId];
+                    document.getElementById('articleSelector').style.display = 'none';
+                    renderVisualization(article);
+                }
+            } catch (e) {
+                output.innerHTML = `<div class="error-message">⚠️ Error parsing JSON: ${e.message}</div>`;
+            }
+        }
+
+        function renderVisualization(article) {
+            const output = document.getElementById('output');
+            
+            // Statistics
+            const entityCount = article.entities.length;
+            const relationCount = article.relations ? article.relations.length : 0;
+            const labelTypes = [...new Set(article.entities.map(e => e.label))];
+            
+            // Count entities by label
+            const labelCounts = {};
+            article.entities.forEach(entity => {
+                labelCounts[entity.label] = (labelCounts[entity.label] || 0) + 1;
+            });
+
+            let html = `
+                <div class="visualization-container">
+                    <h2 class="section-title">Title with Annotations</h2>
+                    <div class="text-display">
+                        ${highlightEntities(article.metadata.title, article.entities.filter(e => e.location === 'title'))}
+                    </div>
+                </div>
+
+                <div class="visualization-container">
+                    <h2 class="section-title">Abstract with Annotations</h2>
+                    <div class="text-display">
+                        ${highlightEntities(article.metadata.abstract, article.entities.filter(e => e.location === 'abstract'))}
+                    </div>
+                </div>
+
+                <div class="visualization-container">
+                    <h2 class="section-title">Statistics</h2>
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <div class="stat-number">${entityCount}</div>
+                            <div class="stat-label">Total Entities</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${labelTypes.length}</div>
+                            <div class="stat-label">Entity Types</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${relationCount}</div>
+                            <div class="stat-label">Relations</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="visualization-container">
+                    <h2 class="section-title">Entity Legend</h2>
+                    <div class="legend-container">
+                        ${labelTypes.map(label => `
+                            <div class="legend-item" onclick="showDefinition('${label}')">
+                                <div class="legend-color" style="background-color: ${getColorForLabel(label)}"></div>
+                                <span class="legend-label">${label}</span>
+                                <span class="legend-count">(${labelCounts[label]})</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="visualization-container">
+                    <h2 class="section-title">Metadata</h2>
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <div class="metadata-label">Title</div>
+                            <div class="metadata-value">${article.metadata.title}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Author</div>
+                            <div class="metadata-value">${article.metadata.author}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Journal</div>
+                            <div class="metadata-value">${article.metadata.journal}</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Year</div>
+                            <div class="metadata-value">${article.metadata.year}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (article.relations && article.relations.length > 0) {
+                html += `
+                    <div class="visualization-container">
+                        <h2 class="section-title">Relations (${article.relations.length})</h2>
+                        ${article.relations.map(rel => `
+                            <div class="relation-card">
+                                <div class="relation-content">
+                                    <span class="relation-entity" style="background-color: ${getColorForLabel(rel.subject_label)}; color: white;">
+                                        ${rel.subject_text_span}
+                                    </span>
+                                    <span class="relation-arrow">→ ${rel.predicate} →</span>
+                                    <span class="relation-entity" style="background-color: ${getColorForLabel(rel.object_label)}; color: white;">
+                                        ${rel.object_text_span}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            output.innerHTML = html;
+        }
+
+        function showDefinition(label) {
+            showDefinitions();
+            // Scroll to and highlight the specific definition
+            setTimeout(() => {
+                const items = document.querySelectorAll('.definition-item');
+                items.forEach(item => {
+                    item.classList.remove('highlight');
+                    if (item.dataset.type === label) {
+                        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        item.classList.add('highlight');
+                        setTimeout(() => {
+                            item.classList.remove('highlight');
+                        }, 3000);
+                    }
+                });
+            }, 100);
+        }
+
+        function highlightEntities(text, entities) {
+            if (!entities || entities.length === 0) return text;
+
+            // Sort entities by start position in reverse order
+            const sortedEntities = [...entities].sort((a, b) => b.start_idx - a.start_idx);
+            
+            let result = text;
+            sortedEntities.forEach(entity => {
+                const before = result.substring(0, entity.start_idx);
+                // Add 1 to end_idx to include the last character
+                const highlighted = result.substring(entity.start_idx, entity.end_idx + 1);
+                const after = result.substring(entity.end_idx + 1);
+                
+                const color = getColorForLabel(entity.label);
+                result = `${before}<span class="entity-highlight" style="background-color: ${color}33; color: ${color};">
+                    ${highlighted}
+                    <span class="entity-tooltip">${entity.label}</span>
+                </span>${after}`;
+            });
+            
+            return result;
+        }
+
+        // Load example on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadExample();
+            visualizeData();
+        });
+    </script>
+</body>
+</html>
